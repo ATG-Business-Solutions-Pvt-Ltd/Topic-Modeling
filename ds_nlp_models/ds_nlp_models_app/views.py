@@ -15,7 +15,9 @@ from sklearn.feature_extraction import _stop_words
 import os
 import PyPDF2
 import fpdf
-import numpy as np
+from .service import churnPrediction
+
+
 import re
 
 
@@ -101,9 +103,6 @@ def summerize(lda_dtf,dubby):
         summerizeTxt+=".".join(dubby[i].split(".")[:2]) + "."
         print(summerizeTxt)
     return summerizeTxt
-    
-    
-   
 
 class SummerizeModel(APIView):
     queryset = UploadedFile.objects.all()
@@ -136,5 +135,33 @@ class SummerizeModel(APIView):
             topicRes=[]
             respose_dict={'status':status,'error_msg':error_msg,'topics':topicRes,'summary':summary}
             return JsonResponse(respose_dict) 
+
+class ChurnPredictionModel(APIView):
+    queryset = UploadedFile.objects.all()
+    serializer_class = FileUploadSerializer
+    parser_classes = (MultiPartParser, FormParser,)
+    def post(self,request):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            if serializer.is_valid():
+                uploaded_file = request.FILES['file']
+                churnPrediction.dataPreprocessing(uploaded_file)
+                status = True
+                error_msg = ""
+                respose_dict={'status':status,'error_msg':error_msg,'response':'Chur prediction completed'}
+                return JsonResponse(respose_dict);
+        except Exception as e:
+            status=False  
+            error_msg=str(e) 
+            print("Error :")
+            print(e) 
+            summary=""
+            topicRes=[]
+            respose_dict={'status':status,'error_msg':error_msg}
+            return JsonResponse(respose_dict) 
+    
+   
+
+
 
 # Create your views here.
